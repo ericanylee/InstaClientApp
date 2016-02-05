@@ -3,16 +3,19 @@
 //  Instagram
 //
 //  Created by Erica Lee on 1/28/16.
-//  Copyright © 2016 Erica Lee. All rights reserved.
+//  Copyright © 2016 Erica Lee, Yuting Zhang. All rights reserved.
 //
 
 import UIKit
 import AFNetworking
 
-class PhotoViewController: UIViewController,UITableViewDataSource, UITableViewDelegate {
+class PhotoViewController: UIViewController,UITableViewDataSource, UITableViewDelegate, UIScrollViewDelegate{
 
     @IBOutlet weak var tableView: UITableView!
     var media: [NSDictionary]?
+    
+    var isMoreDataLoading = false
+    var loadingMoreView : InfiniteScrollActivityView?
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -45,6 +48,16 @@ class PhotoViewController: UIViewController,UITableViewDataSource, UITableViewDe
         });
         
         task.resume()
+        
+        // Set up Infinite Scroll loading indicator
+        let frame = CGRectMake(0, tableView.contentSize.height, tableView.bounds.size.width, InfiniteScrollActivityView.defaultHeight)
+        loadingMoreView = InfiniteScrollActivityView(frame: frame)
+        loadingMoreView!.hidden = true
+        tableView.addSubview(loadingMoreView!)
+        
+        var insets = tableView.contentInset;
+        insets.bottom += InfiniteScrollActivityView.defaultHeight;
+        tableView.contentInset = insets
     }
     
     override func didReceiveMemoryWarning() {
@@ -91,8 +104,50 @@ class PhotoViewController: UIViewController,UITableViewDataSource, UITableViewDe
     
     }
     
+    func scrollViewDidScroll(scrollView: UIScrollView) {
+        if (!isMoreDataLoading){
+            // Calculate the position of one screen length before the bottom of the results
+            let scrollViewContentHeight = tableView.contentSize.height
+            let scrollOffsetThreshold = scrollViewContentHeight - tableView.bounds.size.height
+            
+            // When the user has scrolled past the threshold, start requesting
+            if(scrollView.contentOffset.y > scrollOffsetThreshold && tableView.dragging) {
+                
+                // Update position of loadingMoreView, and start loading indicator
+                let frame = CGRectMake(0, tableView.contentSize.height, tableView.bounds.size.width, InfiniteScrollActivityView.defaultHeight)
+                loadingMoreView?.frame = frame
+                loadingMoreView!.startAnimating()
 
-
-    
+                
+                isMoreDataLoading = true
+                let clientId = "e05c462ebd86446ea48a5af73769b602"
+                let url = NSURL(string:"https://api.instagram.com/v1/media/popular?client_id=\(clientId)")
+                let request = NSURLRequest(URL: url!)
+                let session = NSURLSession(
+                    configuration: NSURLSessionConfiguration.defaultSessionConfiguration(),
+                    delegate:nil,
+                    delegateQueue:NSOperationQueue.mainQueue()
+                )
+                
+                let task : NSURLSessionDataTask = session.dataTaskWithRequest(request,
+                    completionHandler: { (dataOrNil, response, error) in
+                        if let data = dataOrNil {
+                            if let responseDictionary = try! NSJSONSerialization.JSONObjectWithData(
+                                data, options:[]) as? NSDictionary {
+                                    self.isMoreDataLoading = false
+                                    //NSLog("response: \(responseDictionary)")
+                                    self.media?.appendContentsOf(responseDictionary["data"] as! [NSDictionary])
+                                    self.tableView.reloadData()
+                                    
+                                    // Stop the loading indicator
+                                    self.loadingMoreView!.stopAnimating()
+                            }
+                        }
+                });
+                
+                task.resume()
+            }
+        }
+    }
 }
 
