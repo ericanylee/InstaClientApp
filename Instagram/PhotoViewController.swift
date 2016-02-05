@@ -74,5 +74,25 @@ class PhotoViewController: UIViewController,UITableViewDataSource, UITableViewDe
         return cell
     }
     
+    func tableView(tableView: UITableView, didSelectRowAtIndexPath indexPath: NSIndexPath) {
+
+        tableView.deselectRowAtIndexPath(indexPath, animated:true)
+        
+    }
+    
+    override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
+    
+        let cell = sender as! UITableViewCell
+        let vc = segue.destinationViewController as! PhotoDetailsViewcontroller
+        let indexPath = tableView.indexPathForCell(cell)
+        
+        vc.photo = media
+    
+    
+    }
+    
+
+
+    
 }
 
