@@ -2,7 +2,7 @@
 
 This is an Instagram client application that lets users view popular instagram posts. 
 
-Contributors: Erica Lee, 
+Contributors: Erica Lee, YuTing Zhang 
 
 Time spent: ~24 hours spent in total
 
